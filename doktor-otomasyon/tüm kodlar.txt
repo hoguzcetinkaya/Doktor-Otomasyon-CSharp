@@ -1,0 +1,1704 @@
+Alperen Kuzhan 191307031
+Batuhan Aral 191307033
+Hüseyin Oğuz Çetinkaya 191307003
+
+/* ANASAYFA Form1*/
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using MySql.Data;
+using MySql.Data.MySqlClient;
+using System.Configuration;
+
+namespace otomasyon_projesi
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+        /*MySQL c# bağlantısı :Technopat internet sitesinden araştırılarak yapıldı. */
+        /*MessageBox kullanımları için : https://sanalkurs.net/c-messagebox-ozellikleri-ve-kullanimi-10231.html */
+        /*DialogResult kullanımı için : https://zaferketenci.com/dialogresultc/ */
+        /*Resize kullanımı için : Yavuz Selim Fatihoğlu Görsel Programlama dersimizden yararlandık.*/
+        MySqlConnection baglanti;
+        
+        
+        void baglanti_kontrol()
+        {
+            baglanti = new MySqlConnection("SERVER = localhost; DATABASE = otomasyon_doktor; UID = root; PASSWORD = rootadmin");
+            try
+            {
+                baglanti.Open();
+                
+                baglanti.Close();
+            }
+            catch (MySqlException e)
+            {
+                MessageBox.Show(e.Message);
+                Application.Exit();
+               
+            }
+        }
+
+        int genislik,yukseklik;
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            genislik = this.Size.Width;
+            yukseklik = this.Size.Height;
+            baglanti_kontrol();
+            
+        }
+
+        private void btEkleme_Click(object sender, EventArgs e)
+        {
+            ekleme Ekle = new ekleme();
+            Ekle.Show();
+            this.Hide();
+        }
+
+        private void btSilme_Click(object sender, EventArgs e)
+        {
+            silme sil = new silme();
+            sil.Show();
+            this.Hide();
+        }
+
+        private void btGuncelleme_Click(object sender, EventArgs e)
+        {
+            guncelleme Guncelle = new guncelleme();
+            Guncelle.Show();
+            this.Hide();
+        }
+
+        private void btSorgulama_Click(object sender, EventArgs e)
+        {
+            sorgulama Sorgula = new sorgulama();
+            Sorgula.Show();
+            this.Hide();
+        }
+
+        private void Form1_Resize(object sender, EventArgs e)
+        {
+            this.Size = new Size(genislik, yukseklik);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            DialogResult cevap=new DialogResult();
+            cevap=MessageBox.Show("Çıkmak istiyor musunuz?","ÇIKIŞ",MessageBoxButtons.YesNo,MessageBoxIcon.Question);
+            
+            if(cevap==DialogResult.Yes)
+            {
+                Application.Exit();
+            }
+
+            
+        }
+    }
+}
+
+/*EKLEME SAYFASI*/ 
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using MySql.Data;
+using MySql.Data.MySqlClient;
+using System.Configuration;
+
+namespace otomasyon_projesi
+{
+    public partial class ekleme : Form
+    {
+        /*Ekleme : Tasarım Kodlama Youtube kanalını izleyerek yapıldı. https://www.youtube.com/watch?v=_Yo6FCyitwc */
+        /*MessageBox kullanımları için : https://sanalkurs.net/c-messagebox-ozellikleri-ve-kullanimi-10231.html */
+        /*Sadece harf ve sayı girişi için : https://www.muratyazici.com/c-textboxa-sadece-harf-girme-sadece-sayi-girme.html */
+        /*Resize kullanımı için : Yavuz Selim Fatihoğlu Görsel Programlama dersimizden yararlandık.*/
+        public ekleme()
+        {
+            InitializeComponent();
+        }
+        MySqlConnection baglanti;
+        MySqlCommand komut;
+        MySqlDataAdapter DA;
+        MySqlDataReader DR;
+
+        void baglanti_kontrol()
+        {
+            baglanti = new MySqlConnection("SERVER=localhost;DATABASE=otomasyon_doktor;UID=root;PASSWORD=rootadmin");
+            
+            try
+            {
+                baglanti.Open();
+                
+                baglanti.Close();
+            }
+            catch (MySqlException e)
+            {
+
+                MessageBox.Show(e.Message);
+                Application.Exit();
+            }
+        }
+
+        int genislik, yukseklik;
+        void ekrana_yazdir(string a)
+        {
+            /*Listeleme : Tasarım Kodlama Youtube kanalını izleyerek yapıldı. https://www.youtube.com/watch?v=_Yo6FCyitwc */
+            baglanti.Open();
+            string getir = "SELECT * from "+a+" order by idadres desc";
+            DA = new MySqlDataAdapter(getir, baglanti);
+            DataTable tablo = new DataTable();
+            DA.Fill(tablo);
+            dataGridView1.DataSource = tablo;
+            baglanti.Close();
+        }
+        private void ekleme_Load(object sender, EventArgs e)
+        {
+            baglanti_kontrol();
+            btAdresEkle.Enabled = false;
+            btDoktorEkle.Enabled = false;
+            dataGridView1.Visible = false;
+            panel1.Visible = false;
+            genislik = this.Size.Width;
+            yukseklik = this.Size.Height;
+
+        }
+        string degisken;
+    private void btAdresEkle_Click(object sender, EventArgs e)
+        {
+            /*Veri Çekme : Tasarım Kodlama Youtube kanalını izleyerek yapıldı. https://www.youtube.com/watch?v=_Yo6FCyitwc */
+            baglanti.Open();
+            string adresIDcek = "select max(idadres) from adres";
+            komut = new MySqlCommand(adresIDcek, baglanti);
+            DR = komut.ExecuteReader();
+            if(DR.Read())
+            {
+                textBox6.Text = DR["max(idadres)"].ToString();
+            }
+            int adresSayac = Convert.ToInt32(textBox6.Text);
+            adresSayac++;
+            textBox6.Text = adresSayac.ToString();
+
+
+            baglanti.Close();
+            /*adres ekleme yeri*/
+            
+             string adresEkle = "INSERT INTO adres(idadres,il,ilce,mahalle,sokak) VALUES(@idadres,@il,@ilce,@mahalle,@sokak)";
+             komut = new MySqlCommand(adresEkle, baglanti);
+             komut.Parameters.AddWithValue("@idadres", textBox6.Text);
+             komut.Parameters.AddWithValue("@il", textBox7.Text);
+             komut.Parameters.AddWithValue("@ilce", textBox8.Text);
+             komut.Parameters.AddWithValue("@mahalle", textBox9.Text);
+             komut.Parameters.AddWithValue("@sokak", textBox10.Text);
+             baglanti.Open();
+             komut.ExecuteNonQuery();
+             baglanti.Close();
+            textBox11.Text = textBox6.Text;
+
+            checkBox1.Checked = false;
+            textBox6.Text = "";
+            textBox7.Text = "";
+            textBox8.Text = "";
+            textBox9.Text = "";
+            textBox10.Text = "";
+
+            panel2.Visible = false;
+            panel1.Visible = true;
+            panel1.Location = new Point(474, 76);
+            btAdresEkle.Enabled = false;
+
+            btCikis.Visible = false;
+        }
+
+
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            if(checkBox1.Checked==true && textBox7.Text!="" && textBox8.Text != "" && textBox9.Text != "" && textBox10.Text != "")
+            {
+                btAdresEkle.Enabled = true;
+            }
+        }
+
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+
+            degisken = "adres";
+            ekrana_yazdir(degisken);
+        }
+
+        private void btDoktorEkle_Click(object sender, EventArgs e)
+        {
+            
+            int tcUzunluk = textBox5.TextLength;
+            if(tcUzunluk==11)
+            {
+                baglanti.Open();
+                string doktorIDcek = "select max(iddoktor) from doktor";
+                komut = new MySqlCommand(doktorIDcek, baglanti);
+                DR = komut.ExecuteReader();
+                if (DR.Read())
+                {
+                    textBox1.Text = DR["max(iddoktor)"].ToString();
+                }
+                int doktorSayac = Convert.ToInt32(textBox1.Text);
+                doktorSayac++;
+                textBox1.Text = doktorSayac.ToString();
+                baglanti.Close();
+                /*doktor ekleme */
+                int izinhakki = 40;
+                int durum = 1;
+                label12.Text = (comboBox1.SelectedIndex + 1).ToString();
+                label13.Text = (comboBox2.SelectedIndex + 1).ToString();
+                label18.Text = (comboBox3.SelectedIndex + 1).ToString();
+
+                string doktorEkle = "INSERT INTO doktor (iddoktor,doktor_adi,doktor_soyadi,doktor_unvan,doktor_tc,doktor_dogum_tarihi,doktor_izin,idhastane,idbrans,iddokul,idadres,durum) VALUES(@iddoktor,@doktor_adi,@doktor_soyadi,@doktor_unvan,@doktor_tc,@doktor_dogum_tarihi,@doktor_izin,@idhastane,@idbrans,@iddokul,@idadres,@durum)";
+                komut = new MySqlCommand(doktorEkle, baglanti);
+                komut.Parameters.AddWithValue("@iddoktor", textBox1.Text);
+                komut.Parameters.AddWithValue("@doktor_adi", textBox2.Text);
+                komut.Parameters.AddWithValue("@doktor_soyadi", textBox3.Text);
+                komut.Parameters.AddWithValue("@doktor_unvan", comboBox4.Text);
+                komut.Parameters.AddWithValue("@doktor_tc", textBox5.Text);
+                komut.Parameters.AddWithValue("@doktor_dogum_tarihi", dateTimePicker1.Value);
+                komut.Parameters.AddWithValue("@doktor_izin", izinhakki);
+                komut.Parameters.AddWithValue("@idhastane", label12.Text);
+                komut.Parameters.AddWithValue("@idbrans", label13.Text);
+                komut.Parameters.AddWithValue("@iddokul", label18.Text);
+                komut.Parameters.AddWithValue("@idadres", textBox11.Text);
+                komut.Parameters.AddWithValue("@durum", durum);
+
+                baglanti.Open();
+                komut.ExecuteNonQuery();
+                baglanti.Close();
+
+                degisken = "doktor";
+                ekrana_yazdir(degisken);
+                panel1.Visible = false;
+                MessageBox.Show("Ekleme başarıyla tamamlandı.","BİLGİ",MessageBoxButtons.OK,MessageBoxIcon.Information);
+                dataGridView1.Location = new Point(150, 300);
+                dataGridView1.Visible = true;
+                btYeniKayit.Visible = true;
+                btCikis.Visible = true;
+
+            }
+            else
+            {
+                MessageBox.Show("Hatalı TC girişi doğru yapınız!!","HATA!",MessageBoxButtons.OK,MessageBoxIcon.Error);
+            }
+
+           
+        }
+
+        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBox2.Checked == true && textBox2.Text != "" && textBox3.Text != ""  && textBox5.Text != "" && comboBox1.SelectedIndex>=0 && comboBox2.SelectedIndex>=0 && comboBox3.SelectedIndex>=0 && comboBox4.SelectedIndex>=0)
+            {
+                btDoktorEkle.Enabled = true;
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            
+            degisken = "doktor";
+            ekrana_yazdir(degisken);
+        }
+
+        private void btCikis_Click(object sender, EventArgs e)
+        {
+            Form1 anasayfa = new Form1();
+            anasayfa.Show();
+            this.Hide();
+        }
+
+        private void button1_Click_2(object sender, EventArgs e)
+        {
+            panel2.Visible = true;
+            dataGridView1.Visible = false;
+            btYeniKayit.Visible = false;
+        }
+
+        private void textBox7_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsLetter(e.KeyChar) && !char.IsControl(e.KeyChar)
+                 && !char.IsSeparator(e.KeyChar);
+        }
+
+        private void textBox8_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsLetter(e.KeyChar) && !char.IsControl(e.KeyChar)
+                 && !char.IsSeparator(e.KeyChar);
+        }
+
+        private void textBox9_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsLetter(e.KeyChar) && !char.IsControl(e.KeyChar)
+                 && !char.IsSeparator(e.KeyChar);
+        }
+
+        private void textBox5_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar);
+        }
+
+        private void textBox2_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsLetter(e.KeyChar) && !char.IsControl(e.KeyChar)
+                 && !char.IsSeparator(e.KeyChar);
+        }
+
+        private void ekleme_Resize(object sender, EventArgs e)
+        {
+            this.Size = new Size(genislik, yukseklik);
+        }
+
+        private void textBox3_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsLetter(e.KeyChar) && !char.IsControl(e.KeyChar)
+                 && !char.IsSeparator(e.KeyChar);
+        }
+    }
+}
+
+
+/*SİLME SAYFASI*/
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using MySql.Data;
+using MySql.Data.MySqlClient;
+using System.Configuration;
+
+namespace otomasyon_projesi
+{
+    public partial class silme : Form
+    {
+        /*Silme : Murat Yücedağ Youtube kanalını izleyerek yapıldı. https://www.youtube.com/watch?v=L6-6LVROxxo */
+        /*MessageBox kullanımları için : https://sanalkurs.net/c-messagebox-ozellikleri-ve-kullanimi-10231.html */
+        /*Sadece harf ve sayı girişi için : https://www.muratyazici.com/c-textboxa-sadece-harf-girme-sadece-sayi-girme.html */
+        /*Resize kullanımı için : Yavuz Selim Fatihoğlu Görsel Programlama dersimizden yararlandık.*/
+        public silme()
+        {
+            InitializeComponent();
+        }
+        MySqlConnection baglanti;
+        MySqlCommand komut;
+        MySqlDataReader DR;
+
+        void baglanti_kontrol()
+        {
+            baglanti = new MySqlConnection("SERVER=localhost;DATABASE=otomasyon_doktor;UID=root;PASSWORD=rootadmin");
+            try
+            {
+                baglanti.Open();
+                
+                baglanti.Close();
+            }
+            catch (MySqlException e)
+            {
+                MessageBox.Show(e.Message);
+            }
+        }
+        int genislik, yukseklik;
+
+        private void silme_Load(object sender, EventArgs e)
+        {
+            baglanti_kontrol();
+            genislik = this.Size.Width;
+            yukseklik = this.Size.Height;
+
+        }
+        string doktorid;
+        private void btSil_Click(object sender, EventArgs e)
+        {
+            
+            doktorid = null;
+            try
+            {
+                
+
+                baglanti.Open();
+                string silIDLER = "SELECT iddoktor,idadres from doktor where doktor_adi=@doktor_adi AND doktor_soyadi=@doktor_soyadi AND doktor_tc=@doktor_tc";
+                komut = new MySqlCommand(silIDLER, baglanti);
+                komut.Parameters.AddWithValue("@doktor_adi", textBox1.Text);
+                komut.Parameters.AddWithValue("@doktor_soyadi", textBox2.Text);
+                komut.Parameters.AddWithValue("@doktor_tc", textBox3.Text);
+                DR = komut.ExecuteReader();
+                if (DR.Read())
+                {
+                    doktorid = DR["iddoktor"].ToString();
+                    label3.Text = DR["idadres"].ToString();
+
+                }
+                baglanti.Close();
+
+
+
+                string doktorAsiSil = "DELETE FROM doktor_asi_vurulur where doktor_iddoktor=@doktor_iddoktor";
+                komut = new MySqlCommand(doktorAsiSil, baglanti);
+                komut.Parameters.AddWithValue("@doktor_iddoktor", doktorid);
+                baglanti.Open();
+                komut.ExecuteNonQuery();
+                baglanti.Close();
+
+                
+                string durumGuncelle = "UPDATE doktor set durum=0 where iddoktor=@iddoktor";
+                komut = new MySqlCommand(durumGuncelle, baglanti);
+                komut.Parameters.AddWithValue("@iddoktor", doktorid);
+                baglanti.Open();
+                komut.ExecuteNonQuery();
+                baglanti.Close();
+
+
+                string IzinSil = "DELETE FROM izin where iddoktor=@iddoktor";
+                komut = new MySqlCommand(IzinSil, baglanti);
+                komut.Parameters.AddWithValue("@iddoktor", doktorid);
+                baglanti.Open();
+                komut.ExecuteNonQuery();
+                baglanti.Close();
+
+                string NobetSil = "DELETE FROM nobet where iddoktor=@iddoktor";
+                komut = new MySqlCommand(NobetSil, baglanti);
+                komut.Parameters.AddWithValue("@iddoktor", doktorid);
+                baglanti.Open();
+                komut.ExecuteNonQuery();
+                baglanti.Close();
+
+
+                string Doktorsil = "DELETE FROM doktor where iddoktor=@iddoktor";
+                komut = new MySqlCommand(Doktorsil, baglanti);
+                komut.Parameters.AddWithValue("@iddoktor", doktorid);
+                baglanti.Open();
+                komut.ExecuteNonQuery();
+                baglanti.Close();
+
+                string AdresSil = "DELETE FROM adres where idadres=@idadres";
+                komut = new MySqlCommand(AdresSil, baglanti);
+                komut.Parameters.AddWithValue("@idadres", label3.Text);
+                baglanti.Open();
+                komut.ExecuteNonQuery();
+                baglanti.Close();
+
+                MessageBox.Show("Silme işlemi başarıyla tamamlandı.", "BİLGİ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+
+
+            }
+            catch (Exception)
+            {
+
+                MessageBox.Show("Bu TC'ye ait bilgi bulunmamaktadır.", "HATA!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            baglanti.Close();
+                
+        }
+
+        private void btCikis_Click(object sender, EventArgs e)
+        {
+            Form1 anasayfa = new Form1();
+            anasayfa.Show();
+            this.Hide();
+        }
+
+        private void textBox3_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar);
+        }
+
+        private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsLetter(e.KeyChar) && !char.IsControl(e.KeyChar)
+                 && !char.IsSeparator(e.KeyChar);
+        }
+
+        private void silme_Resize(object sender, EventArgs e)
+        {
+            this.Size = new Size(genislik, yukseklik);
+        }
+
+        private void textBox2_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsLetter(e.KeyChar) && !char.IsControl(e.KeyChar)
+                 && !char.IsSeparator(e.KeyChar);
+        }
+    }
+}
+
+/*GÜNCELLEME SAYFASI*/
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using MySql.Data;
+using MySql.Data.MySqlClient;
+using System.Configuration;
+
+namespace otomasyon_projesi
+{
+    public partial class guncelleme : Form
+    {
+        /*Güncelleme : Tasarım Kodlama Youtube kanalını izleyerek yapıldı. https://www.youtube.com/watch?v=_Yo6FCyitwc */
+        /*MessageBox kullanımları için : https://sanalkurs.net/c-messagebox-ozellikleri-ve-kullanimi-10231.html */
+        /*DateTimePicker işlemleri için :https://www.youtube.com/watch?v=QRzPK7EAexo */
+        /*Sadece harf ve sayı girişi için : https://www.muratyazici.com/c-textboxa-sadece-harf-girme-sadece-sayi-girme.html */
+        /*Resize kullanımı için : Yavuz Selim Fatihoğlu Görsel Programlama dersimizden yararlandık.*/
+
+        public guncelleme()
+        {
+            InitializeComponent();
+        }
+        MySqlConnection baglanti;
+        MySqlCommand komut;
+        MySqlDataReader DR;
+
+        void baglanti_kontrol()
+        {
+            baglanti = new MySqlConnection("SERVER=localhost;DATABASE=otomasyon_doktor;UID=root;PASSWORD=rootadmin");
+            try
+            {
+                baglanti.Open();
+                
+                baglanti.Close();
+            }
+            catch (MySqlException e)
+            {
+                MessageBox.Show(e.Message);
+            }
+        }
+
+        private void izinToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("izin");
+        }
+
+        string nobetDoktorID;
+        private void button5_Click(object sender, EventArgs e)
+        {
+            
+            nobetDoktorID = null;
+            
+                baglanti.Open();
+                string NobetDoktorID = "SELECT iddoktor FROM doktor WHERE doktor_tc=@doktor_tc";
+                komut = new MySqlCommand(NobetDoktorID, baglanti);
+                komut.Parameters.AddWithValue("@doktor_tc", textBox3.Text);
+                DR = komut.ExecuteReader();
+                if (DR.Read())
+                {
+                    nobetDoktorID = DR["iddoktor"].ToString();
+                }
+
+                baglanti.Close();
+
+                if(nobetDoktorID!=null)
+                {
+                    baglanti.Open();
+                    string nobetIDcek = "select max(idnobet) from nobet";
+                    komut = new MySqlCommand(nobetIDcek, baglanti);
+                    DR = komut.ExecuteReader();
+                    if (DR.Read())
+                    {
+                        textBox1.Text = DR["max(idnobet)"].ToString();
+                    }
+                    int nobetSayac = Convert.ToInt32(textBox1.Text);
+                    nobetSayac++;
+                    textBox1.Text = nobetSayac.ToString();
+                    baglanti.Close();
+
+
+
+                    string nobetEkle = "INSERT INTO nobet (idnobet,nobet_tarihi,iddoktor) VALUES (@idnobet,@nobet_tarihi,@iddoktor)";
+                    komut = new MySqlCommand(nobetEkle, baglanti);
+                    komut.Parameters.AddWithValue("@idnobet", textBox1.Text);
+                    komut.Parameters.AddWithValue("@nobet_tarihi", dateTimePicker1.Value);
+                    komut.Parameters.AddWithValue("@iddoktor", nobetDoktorID);
+                    baglanti.Open();
+                    komut.ExecuteNonQuery();
+                    MessageBox.Show("Nöbet seçme işlemi başarıyla tamamlandı.", "BİLGİ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    baglanti.Close();
+                }
+                else
+                {
+                    MessageBox.Show("Bu TC'ye ait bilgi bulunmamaktadır.", "HATA!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                
+            textBox3.Text = "";
+            baglanti.Close();
+            
+
+        }
+        int genislik, yukseklik;
+        private void guncelleme_Load(object sender, EventArgs e)
+        {
+            baglanti_kontrol();
+            textBox1.Enabled = false;
+            genislik = this.Size.Width;
+            yukseklik = this.Size.Height;
+
+
+        }
+        string izinDoktorID;
+        private void button4_Click(object sender, EventArgs e)
+        {
+            
+            izinDoktorID = null;
+
+            baglanti.Open();
+                string IzinDoktorID = "SELECT doktor_izin,iddoktor FROM doktor WHERE doktor_tc=@doktor_tc";
+                komut = new MySqlCommand(IzinDoktorID, baglanti);
+                komut.Parameters.AddWithValue("@doktor_tc", textBox2.Text);
+                DR = komut.ExecuteReader();
+                if (DR.Read())
+                {
+                    izinDoktorID= DR["iddoktor"].ToString();
+                    label12.Text = DR["doktor_izin"].ToString();
+
+                }
+                baglanti.Close();
+            
+                if(izinDoktorID!=null)
+            {
+                baglanti.Open();
+                string izinIDcek = "select max(idizin) from izin";
+                komut = new MySqlCommand(izinIDcek, baglanti);
+                DR = komut.ExecuteReader();
+                if (DR.Read())
+                {
+                    textBox4.Text = DR["max(idizin)"].ToString();
+                }
+                int izinSayac = Convert.ToInt32(textBox4.Text);
+                izinSayac++;
+                textBox4.Text = izinSayac.ToString();
+                baglanti.Close();
+
+                TimeSpan izinSuresi = izinTarih2.Value.Subtract(izinTarih1.Value);
+                int fark = izinSuresi.Days;
+                int gunhakki = Convert.ToInt32(label12.Text);
+                if (fark < 0)
+                {
+                    MessageBox.Show("Yanlış tarih aralığı girdiniz !!");
+                }
+                else if (gunhakki == 0)
+                {
+                    MessageBox.Show("İzin hakkınız kalmamıştır !!");
+                }
+                else if (fark > gunhakki)
+                {
+                    MessageBox.Show("Seçtiğiniz aralık izin hakkınızdan fazladır !!");
+                }
+                else
+                {
+                    label7.Text = fark.ToString() + " gün";
+                    int yeniIzinHakki = gunhakki - fark;
+
+                    string izinEkle = "INSERT INTO izin (idizin,izin_baslangic,izin_bitis,iddoktor) VALUES (@idizin,@izin_baslangic,@izin_bitis,@iddoktor)";
+                    komut = new MySqlCommand(izinEkle, baglanti);
+                    komut.Parameters.AddWithValue("@idizin", textBox4.Text);
+                    komut.Parameters.AddWithValue("@izin_baslangic", izinTarih1.Value);
+                    komut.Parameters.AddWithValue("@izin_bitis", izinTarih2.Value);
+                    komut.Parameters.AddWithValue("@iddoktor", izinDoktorID);
+                    baglanti.Open();
+                    komut.ExecuteNonQuery();
+                    baglanti.Close();
+
+                    string IzinGuncelle = "update doktor set doktor_izin=@doktor_izin where iddoktor=@iddoktor";
+                    komut = new MySqlCommand(IzinGuncelle, baglanti);
+                    komut.Parameters.AddWithValue("@doktor_izin", yeniIzinHakki);
+                    komut.Parameters.AddWithValue("@iddoktor", izinDoktorID);
+                    baglanti.Open();
+                    komut.ExecuteNonQuery();
+                    baglanti.Close();
+                }
+                textBox2.Text = "";
+                label11.Visible = true;
+                label7.Visible = true;
+                MessageBox.Show("İzin seçme işlemi başarıyla tamamlandı.", "BİLGİ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                baglanti.Close();
+            }
+            else
+            {
+                MessageBox.Show("Bu TC'ye ait bilgi bulunmamaktadır.", "HATA!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            
+        }
+
+        string asiGuncelleDoktorID;
+        private void btAsiGuncelle_Click_1(object sender, EventArgs e)
+        {
+            
+            asiGuncelleDoktorID = null;
+                baglanti.Open();
+                string asiDoktorID = "SELECT iddoktor FROM doktor WHERE doktor_tc=@doktor_tc";
+                komut = new MySqlCommand(asiDoktorID, baglanti);
+                komut.Parameters.AddWithValue("@doktor_tc", textBox5.Text);
+                DR = komut.ExecuteReader();
+                if (DR.Read())
+                {
+                    asiGuncelleDoktorID = DR["iddoktor"].ToString();
+
+                }
+                baglanti.Close();
+
+                label13.Text = (comboBox1.SelectedIndex + 1).ToString();
+
+                if(asiGuncelleDoktorID!=null)
+            {
+                string asiEkle = "INSERT INTO doktor_asi_vurulur (doktor_iddoktor,asi_idasi,tarih,doz) VALUES(@doktor_iddoktor,@asi_idasi,@tarih,@doz)";
+                komut = new MySqlCommand(asiEkle, baglanti);
+                komut.Parameters.AddWithValue("@doktor_iddoktor", asiGuncelleDoktorID);
+                komut.Parameters.AddWithValue("@asi_idasi", label13.Text);
+                komut.Parameters.AddWithValue("@tarih", asiTarih.Value);
+                if (radioButton1.Checked == true)
+                {
+                    komut.Parameters.AddWithValue("@doz", 1);
+                }
+                if (radioButton2.Checked == true)
+                {
+                    komut.Parameters.AddWithValue("@doz", 2);
+                }
+                if (radioButton3.Checked == true)
+                {
+                    komut.Parameters.AddWithValue("@doz", 3);
+                }
+                baglanti.Open();
+                komut.ExecuteNonQuery();
+                textBox5.Text = "";
+                comboBox1.Text = "";
+                MessageBox.Show("Aşı seçme işlemi başarıyla tamamlandı.", "BİLGİ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                baglanti.Close();
+
+                textBox5.Text = "";
+                comboBox1.Text = "";
+                
+
+                baglanti.Close();
+            }
+                else
+            {
+                MessageBox.Show("Bu TC'ye ait bilgi bulunmamaktadır.", "HATA!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            baglanti.Close();
+        }
+
+        private void btCikis_Click(object sender, EventArgs e)
+        {
+            Form1 anasayfa = new Form1();
+            anasayfa.Show();
+            this.Hide();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            panel1.Visible = true;
+            panel2.Visible = false;
+            panel3.Visible = false;
+            panel1.Location = new Point(453,155);
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            panel1.Visible = false;
+            panel2.Visible = true;
+            panel3.Visible = false;
+            panel2.Location = new Point(453, 155);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            panel1.Visible = false;
+            panel2.Visible = false;
+            panel3.Visible = true;
+            panel3.Location = new Point(453, 155);
+        }
+
+        private void textBox2_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar);
+        }
+
+        private void textBox3_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar);
+        }
+
+        private void guncelleme_Resize(object sender, EventArgs e)
+        {
+            this.Size = new Size(genislik, yukseklik);
+        }
+
+        private void textBox5_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar);
+        }
+    }
+}
+
+/*SORGULAMA SAYFASI*/
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using MySql.Data;
+using MySql.Data.MySqlClient;
+using System.Configuration;
+namespace otomasyon_projesi
+{
+    public partial class sorgulama : Form
+    {
+        /*Sorgulama - Veri Çekme : Tasarım Kodlama Youtube kanalını izleyerek yapıldı. https://www.youtube.com/watch?v=_Yo6FCyitwc */
+        /*MessageBox kullanımları için : https://sanalkurs.net/c-messagebox-ozellikleri-ve-kullanimi-10231.html */
+        /*Sadece harf ve sayı girişi için : https://www.muratyazici.com/c-textboxa-sadece-harf-girme-sadece-sayi-girme.html */
+        /*Resize kullanımı için : Yavuz Selim Fatihoğlu Görsel Programlama dersimizden yararlandık.*/
+        public sorgulama()
+        {
+            InitializeComponent();
+        }
+        MySqlConnection baglanti;
+        MySqlCommand komut;
+        MySqlDataAdapter DA;
+        MySqlDataReader DR;
+        void baglanti_kontrol()
+        {
+            baglanti = new MySqlConnection("SERVER=localhost;DATABASE=otomasyon_doktor;UID=root;PASSWORD=rootadmin");
+            try
+            {
+                baglanti.Open();
+                
+                baglanti.Close();
+            }
+            catch (MySqlException e)
+            {
+                MessageBox.Show(e.Message);
+            }
+        }
+        int genislik, yukseklik;
+        private void sorgulama_Load(object sender, EventArgs e)
+        {
+            baglanti_kontrol();
+            dataGridView1.Visible = false;
+            panel1.Visible = false;
+            panel2.Visible = false;
+            panel3.Visible = false;
+            panel4.Visible = false;
+            panel5.Visible = false;
+            panel6.Visible = false;
+            panel7.Visible = false;
+            panel8.Visible = false;
+            genislik = this.Size.Width;
+            yukseklik = this.Size.Height;
+
+        }
+        string doktorid;
+        private void btDoktorAra_Click(object sender, EventArgs e)
+        {
+            
+            try
+            {
+                doktorid = null;
+                baglanti.Open();
+                string doktorAraGiris = "SELECT iddoktor from doktor where doktor_adi=@doktor_adi and doktor_soyadi=@doktor_soyadi";
+                komut = new MySqlCommand(doktorAraGiris, baglanti);
+                komut.Parameters.AddWithValue("@doktor_adi", textBox1.Text);
+                komut.Parameters.AddWithValue("@doktor_soyadi", textBox2.Text);
+                DR = komut.ExecuteReader();
+                if (DR.Read())
+                {
+                    doktorid = DR["iddoktor"].ToString();
+                }
+                baglanti.Close();
+
+
+                baglanti.Open();
+                string doktorAra = "Select doktor.doktor_unvan,doktor.doktor_adi,doktor.doktor_soyadi,doktor.doktor_dogum_tarihi,brans.brans_adi,okul.okul_adi,hastane.hastane_adi,adres.il,adres.ilce,adres.mahalle,adres.sokak from hastane,brans,okul,adres,doktor where adres.idadres=doktor.idadres and brans.idbrans=doktor.idbrans and doktor.iddokul=okul.idokul and hastane.idhastane=doktor.idhastane and (doktor.iddoktor=" + doktorid + ")";
+                DA = new MySqlDataAdapter(doktorAra, baglanti);
+                DataTable tabloDoktorAra = new DataTable();
+                DA.Fill(tabloDoktorAra);
+                dataGridView1.DataSource = tabloDoktorAra;
+                dataGridView1.Visible = true;
+                baglanti.Close();
+            }
+            catch (Exception)
+            {
+                
+                MessageBox.Show("Böyle bir doktor kaydı bulunamadı.", "HATA!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                
+            }
+
+            baglanti.Close();
+
+
+
+
+        }
+
+        private void btIzinSorgula_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                doktorid = null;
+                baglanti.Open();
+                string KalanIzinDoktorID = "SELECT iddoktor from doktor where doktor_tc=@doktor_tc";
+                komut = new MySqlCommand(KalanIzinDoktorID, baglanti);
+                komut.Parameters.AddWithValue("@doktor_tc", textBox4.Text);
+                DR = komut.ExecuteReader();
+                if (DR.Read())
+                {
+                    doktorid = DR["iddoktor"].ToString();
+                }
+                baglanti.Close();
+
+
+                baglanti.Open();
+                string KalanIzinSorgula = "Select doktor_adi,doktor_soyadi,doktor_izin from doktor where iddoktor=" + doktorid + "";
+                DA = new MySqlDataAdapter(KalanIzinSorgula, baglanti);
+                DataTable tabloIzinGetir = new DataTable();
+                DA.Fill(tabloIzinGetir);
+                dataGridView1.DataSource = tabloIzinGetir;
+                dataGridView1.Visible = true;
+                baglanti.Close();
+                
+
+            }
+            catch (MySqlException)
+            {
+                MessageBox.Show("Bu TC'ye ait bilgi bulunmamaktadır.", "HATA!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            baglanti.Close();
+            
+            
+
+
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            dataGridView1.Visible = false;
+            panel1.Visible = true;
+            panel2.Visible = false;
+            panel3.Visible = false;
+            panel4.Visible = false;
+            panel5.Visible = false;
+            panel6.Visible = false;
+            panel7.Visible = false;
+            panel8.Visible = false;
+            panel1.Location = new Point(480, 75);
+        }
+
+        private void btIzinTarih_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                doktorid = null;
+                baglanti.Open();
+                string KullanilanIzinID = "SELECT iddoktor from doktor where doktor_tc=@doktor_tc";
+                komut = new MySqlCommand(KullanilanIzinID, baglanti);
+                komut.Parameters.AddWithValue("@doktor_tc", textBox3.Text);
+                DR = komut.ExecuteReader();
+                if (DR.Read())
+                {
+                    doktorid = DR["iddoktor"].ToString();
+                }
+                baglanti.Close();
+
+                baglanti.Open();
+                string KullanilanIzin = "Select doktor.doktor_adi,doktor.doktor_soyadi,izin.izin_baslangic,izin.izin_bitis from izin,doktor where doktor.iddoktor=izin.iddoktor and (doktor.iddoktor=" + doktorid + ")";
+                DA = new MySqlDataAdapter(KullanilanIzin, baglanti);
+                DataTable tabloIzinKullanilan = new DataTable();
+                DA.Fill(tabloIzinKullanilan);
+                dataGridView1.DataSource = tabloIzinKullanilan;
+                dataGridView1.Visible = true;
+                baglanti.Close();
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Bu TC'ye ait bilgi bulunmamaktadır.", "HATA!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            baglanti.Close();
+            
+        }
+
+        
+
+        private void btHastaneSorgu_Click(object sender, EventArgs e)
+        {
+            int hastaneID;
+            hastaneID = comboBox1.SelectedIndex + 1;
+
+            baglanti.Open();
+            string HastaneCalisanSorgu = "Select doktor.doktor_unvan,doktor.doktor_adi,doktor.doktor_soyadi,brans.brans_adi,hastane.hastane_adi,hastane.hastane_turu from hastane,doktor,brans where hastane.idhastane=doktor.idhastane and brans.idbrans=doktor.idbrans and hastane.idhastane="+hastaneID+"";
+            DA = new MySqlDataAdapter(HastaneCalisanSorgu, baglanti);
+            DataTable tabloHastaneSorgu = new DataTable();
+            DA.Fill(tabloHastaneSorgu);
+            dataGridView1.DataSource = tabloHastaneSorgu;
+            dataGridView1.Visible = true;
+            baglanti.Close();
+        }
+
+        private void btOkulSorgu_Click(object sender, EventArgs e)
+        {
+            int okulID;
+            okulID = comboBox3.SelectedIndex + 1;
+            baglanti.Open();
+            string OkulSorgu = "Select doktor.doktor_adi,doktor.doktor_soyadi,okul.okul_adi,okul.okul_turu from okul,doktor where okul.idokul=doktor.iddokul and okul.idokul=" + okulID + "";
+            DA = new MySqlDataAdapter(OkulSorgu, baglanti);
+            DataTable tabloOkulSorgu = new DataTable();
+            DA.Fill(tabloOkulSorgu);
+            dataGridView1.DataSource = tabloOkulSorgu;
+            dataGridView1.Visible = true;
+            baglanti.Close();
+        }
+
+        private void btHastaneBilgi_Click(object sender, EventArgs e)
+        {
+            
+                int hastaneID;
+                hastaneID = comboBox2.SelectedIndex + 1;
+
+                baglanti.Open();
+                string HastaneSorgu = "Select hastane.hastane_adi,hastane.hastane_turu,adres.il,adres.ilce,adres.mahalle,adres.sokak from hastane,adres where hastane.idadres=adres.idadres and hastane.idhastane=" + hastaneID + "";
+                DA = new MySqlDataAdapter(HastaneSorgu, baglanti);
+                DataTable tabloHastane = new DataTable();
+                DA.Fill(tabloHastane);
+                dataGridView1.DataSource = tabloHastane;
+            dataGridView1.Visible = true;
+            baglanti.Close();
+            
+            
+            
+        }
+
+        private void AsiTakip_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                doktorid = null;
+                baglanti.Open();
+                string AsitakipDoktorID = "SELECT iddoktor from doktor where doktor_tc=@doktor_tc";
+                komut = new MySqlCommand(AsitakipDoktorID, baglanti);
+                komut.Parameters.AddWithValue("@doktor_tc", textBox5.Text);
+                DR = komut.ExecuteReader();
+                if (DR.Read())
+                {
+                    doktorid = DR["iddoktor"].ToString();
+                }
+                baglanti.Close();
+
+                baglanti.Open();
+                string asiDoktorSorgu = "Select doktor.doktor_adi,doktor.doktor_soyadi,asi.asi_adi,doktor_asi_vurulur.tarih,doktor_asi_vurulur.doz from doktor,asi,doktor_asi_vurulur where doktor.iddoktor=doktor_asi_vurulur.doktor_iddoktor and doktor_asi_vurulur.asi_idasi=asi.idasi and iddoktor=" + doktorid + "";
+                DA = new MySqlDataAdapter(asiDoktorSorgu, baglanti);
+                DataTable tabloAsi = new DataTable();
+                DA.Fill(tabloAsi);
+                dataGridView1.DataSource = tabloAsi;
+                dataGridView1.Visible = true;
+                baglanti.Close();
+            }
+            catch (MySqlException)
+            {
+                MessageBox.Show("Bu TC'ye ait bilgi bulunmamaktadır.", "HATA!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            baglanti.Close();
+        }
+
+        private void btNobetSorgu_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                doktorid = null;
+                baglanti.Open();
+                string NobetDoktorID = "SELECT iddoktor from doktor where doktor_tc=@doktor_tc";
+                komut = new MySqlCommand(NobetDoktorID, baglanti);
+                komut.Parameters.AddWithValue("@doktor_tc", textBox6.Text);
+                DR = komut.ExecuteReader();
+                if (DR.Read())
+                {
+                    doktorid = DR["iddoktor"].ToString();
+                }
+                baglanti.Close();
+
+                baglanti.Open();
+                string NobetSorgu = "Select doktor.doktor_adi,doktor.doktor_soyadi,nobet.nobet_tarihi from doktor,nobet where nobet.iddoktor=doktor.iddoktor and doktor.iddoktor=" + doktorid + "";
+                DA = new MySqlDataAdapter(NobetSorgu, baglanti);
+                DataTable tabloNobet = new DataTable();
+                DA.Fill(tabloNobet);
+                dataGridView1.DataSource = tabloNobet;
+                dataGridView1.Visible = true;
+                baglanti.Close();
+            }
+            catch (MySqlException)
+            {
+                MessageBox.Show("Bu TC'ye ait bilgi bulunmamaktadır.", "HATA!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            baglanti.Close();
+        }
+
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            dataGridView1.Visible = false;
+            panel1.Visible = false;
+            panel2.Visible = true;
+            panel3.Visible = false;
+            panel4.Visible = false;
+            panel5.Visible = false;
+            panel6.Visible = false;
+            panel7.Visible = false;
+            panel8.Visible = false;
+            panel2.Location = new Point(480, 75);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            dataGridView1.Visible = false;
+            panel1.Visible = false;
+            panel2.Visible = false;
+            panel3.Visible = true;
+            panel4.Visible = false;
+            panel5.Visible = false;
+            panel6.Visible = false;
+            panel7.Visible = false;
+            panel8.Visible = false;
+            panel3.Location = new Point(480, 75);
+        }
+        private void button4_Click(object sender, EventArgs e)
+        {
+            dataGridView1.Visible = false;
+            panel1.Visible = false;
+            panel2.Visible = false;
+            panel3.Visible = false;
+            panel4.Visible = true;
+            panel5.Visible = false;
+            panel6.Visible = false;
+            panel7.Visible = false;
+            panel8.Visible = false;
+            panel4.Location = new Point(480, 75);
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            dataGridView1.Visible = false;
+            panel1.Visible = false;
+            panel2.Visible = false;
+            panel3.Visible = false;
+            panel4.Visible = false;
+            panel5.Visible = true;
+            panel6.Visible = false;
+            panel7.Visible = false;
+            panel8.Visible = false;
+            panel5.Location = new Point(480, 75);
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            dataGridView1.Visible = false;
+            panel1.Visible = false;
+            panel2.Visible = false;
+            panel3.Visible = false;
+            panel4.Visible = false;
+            panel5.Visible = false;
+            panel6.Visible = true;
+            panel7.Visible = false;
+            panel8.Visible = false;
+            panel6.Location = new Point(480, 75);
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            dataGridView1.Visible = false;
+            panel1.Visible = false;
+            panel2.Visible = false;
+            panel3.Visible = false;
+            panel4.Visible = false;
+            panel5.Visible = false;
+            panel6.Visible = false;
+            panel7.Visible = true;
+            panel8.Visible = false;
+            panel7.Location = new Point(480, 75);
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+            dataGridView1.Visible = false;
+            panel1.Visible = false;
+            panel2.Visible = false;
+            panel3.Visible = false;
+            panel4.Visible = false;
+            panel5.Visible = false;
+            panel6.Visible = false;
+            panel7.Visible = false;
+            panel8.Visible = true;
+            panel8.Location = new Point(480, 75);
+        }
+
+        private void btCikis_Click(object sender, EventArgs e)
+        {
+            Form1 anasayfa = new Form1();
+            anasayfa.Show();
+            this.Hide();
+        }
+
+        private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsLetter(e.KeyChar) && !char.IsControl(e.KeyChar)
+                && !char.IsSeparator(e.KeyChar);
+        }
+
+        private void textBox2_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsLetter(e.KeyChar) && !char.IsControl(e.KeyChar)
+                && !char.IsSeparator(e.KeyChar);
+        }
+
+        private void textBox4_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar);
+        }
+
+        private void textBox3_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar);
+        }
+
+        private void textBox5_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar);
+        }
+
+        private void textBox6_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = !char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar);
+        }
+
+
+        private void sorgulama_Resize(object sender, EventArgs e)
+        {
+            this.Size = new Size(genislik, yukseklik);
+        }
+
+
+    }
+}
+
+/*WORKBENCH VERİ TABANI KODLARI*/
+
+
+-- MySQL Workbench Forward Engineering
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+-- -----------------------------------------------------
+-- Schema otomasyon_doktor
+-- -----------------------------------------------------
+DROP SCHEMA IF EXISTS `otomasyon_doktor` ;
+
+-- -----------------------------------------------------
+-- Schema otomasyon_doktor
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `otomasyon_doktor` DEFAULT CHARACTER SET utf8 ;
+SHOW WARNINGS;
+USE `otomasyon_doktor` ;
+
+-- -----------------------------------------------------
+-- Table `adres`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `adres` ;
+
+SHOW WARNINGS;
+CREATE TABLE IF NOT EXISTS `adres` (
+  `idadres` INT NOT NULL,
+  `il` NVARCHAR(45) NOT NULL,
+  `ilce` NVARCHAR(45) NOT NULL,
+  `mahalle` NVARCHAR(45) NOT NULL,
+  `sokak` NVARCHAR(45) NOT NULL,
+  PRIMARY KEY (`idadres`))
+ENGINE = InnoDB;
+
+SHOW WARNINGS;
+
+-- -----------------------------------------------------
+-- Table `hastane`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `hastane` ;
+
+SHOW WARNINGS;
+CREATE TABLE IF NOT EXISTS `hastane` (
+  `idhastane` INT NOT NULL,
+  `hastane_adi` NVARCHAR(45) NOT NULL,
+  `hastane_turu` NVARCHAR(45) NOT NULL,
+  `idadres` INT NOT NULL,
+  PRIMARY KEY (`idhastane`),
+  CONSTRAINT `fk_hastane_adres`
+    FOREIGN KEY (`idadres`)
+    REFERENCES `adres` (`idadres`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+SHOW WARNINGS;
+CREATE INDEX `fk_hastane_adres1_idx` ON `hastane` (`idadres` ASC) VISIBLE;
+
+SHOW WARNINGS;
+
+-- -----------------------------------------------------
+-- Table `brans`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `brans` ;
+
+SHOW WARNINGS;
+CREATE TABLE IF NOT EXISTS `brans` (
+  `idbrans` INT NOT NULL,
+  `brans_adi` NVARCHAR(45) NOT NULL,
+  PRIMARY KEY (`idbrans`))
+ENGINE = InnoDB;
+
+SHOW WARNINGS;
+
+-- -----------------------------------------------------
+-- Table `okul`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `okul` ;
+
+SHOW WARNINGS;
+CREATE TABLE IF NOT EXISTS `okul` (
+  `idokul` INT NOT NULL,
+  `okul_adi` NVARCHAR(45) NOT NULL,
+  `okul_turu` NVARCHAR(45) NOT NULL,
+  PRIMARY KEY (`idokul`))
+ENGINE = InnoDB;
+
+SHOW WARNINGS;
+
+-- -----------------------------------------------------
+-- Table `doktor`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `doktor` ;
+
+SHOW WARNINGS;
+CREATE TABLE IF NOT EXISTS `doktor` (
+  `iddoktor` INT NOT NULL,
+  `doktor_adi` NVARCHAR(45) NOT NULL,
+  `doktor_soyadi` NVARCHAR(45) NOT NULL,
+  `doktor_unvan` NVARCHAR(45) NOT NULL,
+  `doktor_tc` NVARCHAR(45) NOT NULL,
+  `doktor_dogum_tarihi` DATE NOT NULL,
+  `doktor_izin` INT NOT NULL,
+  `idhastane` INT NOT NULL,
+  `idbrans` INT NOT NULL,
+  `iddokul` INT NOT NULL,
+  `idadres` INT NOT NULL,
+  PRIMARY KEY (`iddoktor`),
+  CONSTRAINT `fk_doktor_hastane`
+    FOREIGN KEY (`idhastane`)
+    REFERENCES `hastane` (`idhastane`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_doktor_brans`
+    FOREIGN KEY (`idbrans`)
+    REFERENCES `brans` (`idbrans`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_doktor_okul`
+    FOREIGN KEY (`iddokul`)
+    REFERENCES `okul` (`idokul`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_doktor_adres`
+    FOREIGN KEY (`idadres`)
+    REFERENCES `adres` (`idadres`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+SHOW WARNINGS;
+CREATE UNIQUE INDEX `doktor_tc_UNIQUE` ON `doktor` (`doktor_tc` ASC) VISIBLE;
+
+SHOW WARNINGS;
+CREATE INDEX `fk_hastane_doktor_idx` ON `doktor` (`idhastane` ASC) VISIBLE;
+
+SHOW WARNINGS;
+CREATE INDEX `fk_brans_doktor_idx` ON `doktor` (`idbrans` ASC) VISIBLE;
+
+SHOW WARNINGS;
+CREATE INDEX `fk_okul_doktor_idx` ON `doktor` (`iddokul` ASC) VISIBLE;
+
+SHOW WARNINGS;
+CREATE INDEX `fk_doktor_adres1_idx` ON `doktor` (`idadres` ASC) VISIBLE;
+
+SHOW WARNINGS;
+
+-- -----------------------------------------------------
+-- Table `asi`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `asi` ;
+
+SHOW WARNINGS;
+CREATE TABLE IF NOT EXISTS `asi` (
+  `idasi` INT NOT NULL,
+  `asi_adi` NVARCHAR(45) NOT NULL,
+  PRIMARY KEY (`idasi`))
+ENGINE = InnoDB;
+
+SHOW WARNINGS;
+
+-- -----------------------------------------------------
+-- Table `nobet`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `nobet` ;
+
+SHOW WARNINGS;
+CREATE TABLE IF NOT EXISTS `nobet` (
+  `idnobet` INT NOT NULL,
+  `nobet_tarihi` DATE NOT NULL,
+  `iddoktor` INT NOT NULL,
+  PRIMARY KEY (`idnobet`),
+  CONSTRAINT `fk_nobet_doktor`
+    FOREIGN KEY (`iddoktor`)
+    REFERENCES `doktor` (`iddoktor`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+SHOW WARNINGS;
+CREATE INDEX `fk_nobet_doktor1_idx` ON `nobet` (`iddoktor` ASC) VISIBLE;
+
+SHOW WARNINGS;
+
+-- -----------------------------------------------------
+-- Table `izin`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `izin` ;
+
+SHOW WARNINGS;
+CREATE TABLE IF NOT EXISTS `izin` (
+  `idizin` INT NOT NULL,
+  `izin_baslangic` DATE NOT NULL,
+  `izin_bitis` DATE NOT NULL,
+  `iddoktor` INT NOT NULL,
+  PRIMARY KEY (`idizin`),
+  CONSTRAINT `fk_izin_doktor`
+    FOREIGN KEY (`iddoktor`)
+    REFERENCES `doktor` (`iddoktor`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+SHOW WARNINGS;
+CREATE INDEX `fk_izin_doktor1_idx` ON `izin` (`iddoktor` ASC) VISIBLE;
+
+SHOW WARNINGS;
+
+-- -----------------------------------------------------
+-- Table `doktor_asi_vurulur`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `doktor_asi_vurulur` ;
+
+SHOW WARNINGS;
+CREATE TABLE IF NOT EXISTS `doktor_asi_vurulur` (
+  `doktor_iddoktor` INT NOT NULL,
+  `asi_idasi` INT NOT NULL,
+  `tarih` DATE NOT NULL,
+  `doz` INT NOT NULL,
+  CONSTRAINT `fk_doktor_has_asi_doktor`
+    FOREIGN KEY (`doktor_iddoktor`)
+    REFERENCES `doktor` (`iddoktor`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_doktor_has_asi_asi`
+    FOREIGN KEY (`asi_idasi`)
+    REFERENCES `asi` (`idasi`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+SHOW WARNINGS;
+CREATE INDEX `fk_doktor_has_asi_asi1_idx` ON `doktor_asi_vurulur` (`asi_idasi` ASC) VISIBLE;
+
+SHOW WARNINGS;
+CREATE INDEX `fk_doktor_has_asi_doktor1_idx` ON `doktor_asi_vurulur` (`doktor_iddoktor` ASC) VISIBLE;
+
+SHOW WARNINGS;
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
+
+INSERT INTO `otomasyon_doktor`.`brans` (`idbrans`, `brans_adi`) VALUES ('1', 'Çocuk Doktoru');
+INSERT INTO `otomasyon_doktor`.`brans` (`idbrans`, `brans_adi`) VALUES ('2', 'Diş Hekimi');
+INSERT INTO `otomasyon_doktor`.`brans` (`idbrans`, `brans_adi`) VALUES ('3', 'Kadın Doğum Hastalıkları');
+INSERT INTO `otomasyon_doktor`.`brans` (`idbrans`, `brans_adi`) VALUES ('4', 'Dahiliye');
+INSERT INTO `otomasyon_doktor`.`brans` (`idbrans`, `brans_adi`) VALUES ('5', 'Genel Cerrahi');
+INSERT INTO `otomasyon_doktor`.`brans` (`idbrans`, `brans_adi`) VALUES ('6', 'Dermatoloji');
+INSERT INTO `otomasyon_doktor`.`brans` (`idbrans`, `brans_adi`) VALUES ('7', 'Nöroloji');
+INSERT INTO `otomasyon_doktor`.`brans` (`idbrans`, `brans_adi`) VALUES ('8', 'Üroloji');
+INSERT INTO `otomasyon_doktor`.`brans` (`idbrans`, `brans_adi`) VALUES ('9', 'Göz Hastalıkları');
+INSERT INTO `otomasyon_doktor`.`brans` (`idbrans`, `brans_adi`) VALUES ('10', 'Kulak Burun Boğaz');
+
+INSERT INTO `otomasyon_doktor`.`okul` (`idokul`, `okul_adi`, `okul_turu`) VALUES ('1', 'Gazi Üniversitesi', 'Devlet');
+INSERT INTO `otomasyon_doktor`.`okul` (`idokul`, `okul_adi`, `okul_turu`) VALUES ('2', 'Pamukkale Üniversitesi', 'Devlet');
+INSERT INTO `otomasyon_doktor`.`okul` (`idokul`, `okul_adi`, `okul_turu`) VALUES ('3', 'Kocaeli Üniversitesi', 'Devlet');
+INSERT INTO `otomasyon_doktor`.`okul` (`idokul`, `okul_adi`, `okul_turu`) VALUES ('4', 'Koç Üniversitesi', 'Özel');
+INSERT INTO `otomasyon_doktor`.`okul` (`idokul`, `okul_adi`, `okul_turu`) VALUES ('5', 'Akdeniz Üniversitesi', 'Devlet');
+INSERT INTO `otomasyon_doktor`.`okul` (`idokul`, `okul_adi`, `okul_turu`) VALUES ('6', 'Ege Üniversitesi', 'Devlet');
+INSERT INTO `otomasyon_doktor`.`okul` (`idokul`, `okul_adi`, `okul_turu`) VALUES ('7', 'İstinye Üniversitesi', 'Özel');
+INSERT INTO `otomasyon_doktor`.`okul` (`idokul`, `okul_adi`, `okul_turu`) VALUES ('8', 'İstanbul Üniversitesi', 'Devlet');
+INSERT INTO `otomasyon_doktor`.`okul` (`idokul`, `okul_adi`, `okul_turu`) VALUES ('9', 'Hacettepe Üniversitesi', 'Devlet');
+INSERT INTO `otomasyon_doktor`.`okul` (`idokul`, `okul_adi`, `okul_turu`) VALUES ('10', 'Medipol Üniversitesi', 'Özel');
+
+INSERT INTO `otomasyon_doktor`.`asi` (`idasi`, `asi_adi`) VALUES ('1', 'BioNTech');
+INSERT INTO `otomasyon_doktor`.`asi` (`idasi`, `asi_adi`) VALUES ('2', 'Grip');
+INSERT INTO `otomasyon_doktor`.`asi` (`idasi`, `asi_adi`) VALUES ('3', 'Kızamık');
+INSERT INTO `otomasyon_doktor`.`asi` (`idasi`, `asi_adi`) VALUES ('4', 'Hepatit A');
+INSERT INTO `otomasyon_doktor`.`asi` (`idasi`, `asi_adi`) VALUES ('5', 'Hepatit B');
+INSERT INTO `otomasyon_doktor`.`asi` (`idasi`, `asi_adi`) VALUES ('6', 'Su Çiçeği');
+INSERT INTO `otomasyon_doktor`.`asi` (`idasi`, `asi_adi`) VALUES ('7', 'Mevsimsel İnfluenza');
+INSERT INTO `otomasyon_doktor`.`asi` (`idasi`, `asi_adi`) VALUES ('8', 'Difteri Tetanoz');
+INSERT INTO `otomasyon_doktor`.`asi` (`idasi`, `asi_adi`) VALUES ('9', 'Sinovac');
+INSERT INTO `otomasyon_doktor`.`asi` (`idasi`, `asi_adi`) VALUES ('10', 'Sputnik V');
+
+/*HASTANE ADRESİ*/
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('1', 'Ankara', 'Yenimahalle', 'Emniyet', 'Bandırma');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('2', 'Denizli', 'Pamukkale', 'Çınaraltı', 'Üniversite');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('3', 'Kocaeli', 'İzmit', 'Kabaoğlu', 'Baki Komşuoğlu Bulvarı');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('4', 'İstanbul', 'Sarıyer', 'Rumelifeneri', 'Sarıyer Rumeli Feneri');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('5', 'Antalya', 'Konyaaltı', 'Pınarbaşı', 'Akdeniz Ünv');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('6', 'İzmir', 'Bornova', 'Erzene', 'Ege Ünv');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('7', 'İstanbul', 'Zeytinburnu', 'Maltepe', 'Teyyareci Sami');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('8', 'İstanbul', 'Fatih', 'Beyazıt', 'Besim Öner Paşa');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('9', 'Ankara', 'Çankaya', 'Üniversiteler', 'Hacettepe Kampüsü');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('10', 'İstanbul', 'Beykoz', 'Kavacık', 'Ekinciler');
+
+/*DOKTORLARIN ADRESİ*/
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('11', 'Ankara', 'Yenimahalle', 'Papatya', '123');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('12', 'Denizli', 'Merkezefendi', 'Saltak', 'Atatürk');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('13', 'Kocaeli', 'İzmit', 'Erenler', 'Cemre');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('14', 'İstanbul', 'Ataşehir', 'Tatlısu', 'Şanlı');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('15', 'Antalya', 'Kepez', 'Çiçek', 'Sıcaksu');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('16', 'İzmir', 'Buca', 'Gazi', '1881');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('17', 'İstanbul', 'Kadıköy', 'Yenisahra', '1907');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('18', 'İstanbul', 'Beşiktaş', 'Dolmabahçe', '1903');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('19', 'Ankara', 'Etimesgut', 'Göksu', 'Duranlar');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('20', 'İstanbul', 'Avcılar', 'Selimiye', 'Sakarya');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('21', 'İstanbul', 'Başakşehir', 'Bebek', 'Kazım Karabekir');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('22', 'İstanbul', 'Güngören', 'Merter', 'Susam');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('23', 'İstanbul', 'Fatih', 'Yenidoğan', '9873');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('24', 'İstanbul', 'Fatih', 'Samatha', '5762');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('25', 'İstanbul', 'Güngören', 'Kızılcık', 'Sular');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('26', 'İstanbul', 'Şişli', 'Helvacılar', 'Şeker');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('27', 'İstanbul', 'Ümraniye', 'Tatlısu', 'Esenli');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('28', 'Ankara', 'Yenimahalle', 'Selanik', 'Yasin');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('29', 'Ankara', 'Yenimahalle', 'Didem', 'Badem');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('30', 'Ankara', 'Yenimahlle', 'Selanik', 'Fıstık');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('31', 'Ankara', 'Etimesgut', 'Manavcılar', 'Meyve');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('32', 'Ankara', 'Etimesgut', 'Akhan', '126');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('33', 'Ankara', 'Etimesgut', 'Güzelkoy', 'Güzler');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('34', 'Kocaeli', 'Derince', 'Şirinevler', 'Mustafa Kemal');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('35', 'Antalya', 'Kemer', 'Çınar', '46');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('36', 'Antalya', 'Alanya', 'Anahtarcılar', 'Altay');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('37', 'Denizli', 'Pamukkale', 'Kale', '126');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('38', 'İzmir', 'Foça', 'Alsancak', 'Limon');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('39', 'İzmir', 'Menemen', 'Yorgancılar', 'Şeftali');
+INSERT INTO `otomasyon_doktor`.`adres` (`idadres`, `il`, `ilce`, `mahalle`, `sokak`) VALUES ('40', 'İzmir', 'Çeşme', 'Boyozcular', 'Gevrek');
+
+INSERT INTO `otomasyon_doktor`.`hastane` (`idhastane`, `hastane_adi`, `hastane_turu`, `idadres`) VALUES ('1', 'Ortadoğu Hastanesi', 'Özel', '1');
+INSERT INTO `otomasyon_doktor`.`hastane` (`idhastane`, `hastane_adi`, `hastane_turu`, `idadres`) VALUES ('2', 'Servergazi Hastanesi', 'Devlet', '2');
+INSERT INTO `otomasyon_doktor`.`hastane` (`idhastane`, `hastane_adi`, `hastane_turu`, `idadres`) VALUES ('3', 'Konak Hastanesi', 'Özel', '3');
+INSERT INTO `otomasyon_doktor`.`hastane` (`idhastane`, `hastane_adi`, `hastane_turu`, `idadres`) VALUES ('4', 'İsmail Akgün Hastanesi', 'Devlet', '4');
+INSERT INTO `otomasyon_doktor`.`hastane` (`idhastane`, `hastane_adi`, `hastane_turu`, `idadres`) VALUES ('5', 'Memorial Antalya Hastanesi', 'Devlet', '5');
+INSERT INTO `otomasyon_doktor`.`hastane` (`idhastane`, `hastane_adi`, `hastane_turu`, `idadres`) VALUES ('6', 'Türkan Özilhan Hastanesi', 'Devlet', '6');
+INSERT INTO `otomasyon_doktor`.`hastane` (`idhastane`, `hastane_adi`, `hastane_turu`, `idadres`) VALUES ('7', 'Sante Plus Hastanesi', 'Özel', '7');
+INSERT INTO `otomasyon_doktor`.`hastane` (`idhastane`, `hastane_adi`, `hastane_turu`, `idadres`) VALUES ('8', 'Haseki Eğitim ve Araştırma Hastanesi', 'Devlet', '8');
+INSERT INTO `otomasyon_doktor`.`hastane` (`idhastane`, `hastane_adi`, `hastane_turu`, `idadres`) VALUES ('9', 'Çankaya Hastanesi', 'Özel', '9');
+INSERT INTO `otomasyon_doktor`.`hastane` (`idhastane`, `hastane_adi`, `hastane_turu`, `idadres`) VALUES ('10', 'Beykoz Devlet Hastanesi', 'Devlet', '10');
+
+/*DOKTOR BİLGİLERİ*/
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('1', 'Oğuz', 'Çetinkaya', 'Uzman', '10000000001', '1986-12-04', '40', '1', '9', '2', '11');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('2', 'Batuhan', 'Aral', 'Profesör', '10000000002', '1988-07-03', '35', '2', '4', '8', '12');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('3', 'Alperen', 'Kuzhan', 'Diş Hekimi', '10000000003', '1965-12-05', '23', '3', '2', '4', '13');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('4', 'Bera', 'Avşar', 'Operatör', '10000000004', '1970-05-20', '17', '4', '6', '3', '14');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('5', 'Recep', 'Tuğrul', 'Profesör', '10000000005', '1967-04-18', '20', '5', '7', '9', '15');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('6', 'Ziya', 'Başkaya', 'Yardımcı Doçent', '10000000006', '1972-08-06', '38', '6', '8', '1', '16');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('7', 'Fatma', 'Coşkun', 'Pratisyen', '10000000007', '1977-03-23', '31', '7', '10', '2', '17');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('8', 'Eymen', 'Doğan', 'Doçent', '10000000008', '1980-08-06', '27', '8', '3', '6', '18');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('9', 'Sıla', 'Akçay', 'Profesör', '10000000009', '1960-11-11', '13', '9', '5', '5', '19');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('10', 'Merve', 'Emer', 'Profesör', '10000000010', '1962-09-01', '2', '10', '6', '5', '20');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('11', 'Tuncay', 'Gezer', 'Asistan', '10000000011', '1982-07-26', '40', '10', '1', '10', '21');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('12', 'Aliberk', 'Asmadil', 'Başasistan', '10000000012', '1975-11-23', '35', '7', '3', '4', '22');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('13', 'Veysel', 'Çetinkaya', 'Profesör', '10000000013', '1960-02-24', '31', '4', '5', '1', '23');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('14', 'Mehmet', 'Koca', 'Doçent', '10000000014', '1970-03-24', '28', '8', '9', '5', '24');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('15', 'Zeynep', 'Bilen', 'Pratisyen', '10000000015', '1985-07-06', '37', '4', '7', '7', '25');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('16', 'Fikri', 'Şimşek', 'Pratisyen', '10000000016', '1980-09-19', '14', '10', '10', '9', '26');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('17', 'Merve', 'Köse', 'Diş Hekimi', '10000000017', '1975-05-15', '16', '7', '2', '8', '27');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('18', 'Şükrü', 'Saraç', 'Uzman', '10000000018', '1988-07-30', '7', '1', '4', '4', '28');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('19', 'Umut', 'Çınar', 'Profesör', '10000000019', '1967-08-31', '40', '9', '6', '6', '29');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('20', 'Efe', 'İdi', 'Operatör', '10000000020', '1959-10-29', '32', '1', '8', '2', '30');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('21', 'Atakan', 'Avcı', 'Yardımcı Doçent', '10000000021', '1972-01-01', '36', '1', '7', '1', '31');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('22', 'Berkant', 'Yıldız', 'Doçent', '10000000022', '1970-12-04', '24', '9', '3', '3', '32');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('23', 'Melih', 'Yıldız', 'Ordinasyüs', '10000000023', '1943-01-02', '13', '1', '1', '7', '33');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('24', 'Fethi', 'Maraşlı', 'Uzman', '10000000024', '1990-12-17', '18', '3', '4', '9', '34');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('25', 'Tuğçe', 'Sancak', 'Asistan', '10000000025', '1993-08-05', '20', '5', '10', '10', '35');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('26', 'Simay', 'Ay', 'Diş Hekimi', '10000000026', '1983-03-17', '31', '5', '2', '10', '36');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('27', 'Ayşegül', 'Tulum', 'Başasistan', '10000000027', '1992-02-22', '19', '2', '5', '4', '37');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('28', 'Hayriye', 'Gül', 'Pratisyen', '10000000028', '1995-05-21', '28', '6', '5', '8', '38');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('29', 'Banu', 'Bayram', 'Operatör', '10000000029', '1977-04-28', '29', '6', '9', '6', '39');
+INSERT INTO `otomasyon_doktor`.`doktor` (`iddoktor`, `doktor_adi`, `doktor_soyadi`, `doktor_unvan`, `doktor_tc`, `doktor_dogum_tarihi`, `doktor_izin`, `idhastane`, `idbrans`, `iddokul`, `idadres`) VALUES ('30', 'Ayten', 'Hasusta', 'Diş Hekimi', '10000000030', '1971-12-15', '30', '6', '2', '2', '40');
+
+/*nöbet girişleri*/
+INSERT INTO `otomasyon_doktor`.`nobet` (`idnobet`, `nobet_tarihi`, `iddoktor`) VALUES ('1', '2021-04-12', '3');
+INSERT INTO `otomasyon_doktor`.`nobet` (`idnobet`, `nobet_tarihi`, `iddoktor`) VALUES ('2', '2021-04-11', '1');
+INSERT INTO `otomasyon_doktor`.`nobet` (`idnobet`, `nobet_tarihi`, `iddoktor`) VALUES ('3', '2021-04-10', '2');
+
+/*izin girişleri*/
+INSERT INTO `otomasyon_doktor`.`izin` (`idizin`, `izin_baslangic`, `izin_bitis`, `iddoktor`) VALUES ('1', '2021-03-10', '2021-03-12', '3');
+
+ALTER TABLE doktor
+ADD durum BIT;
+
+ALTER TABLE doktor_asi_vurulur
+ADD durum BIT;
+
+SET SQL_SAFE_UPDATES = 0;
+update doktor set durum=1;
+SET SQL_SAFE_UPDATES = 1;
+
+SET SQL_SAFE_UPDATES = 0;
+update doktor_asi_vurulur set durum=1;
+SET SQL_SAFE_UPDATES = 1;
+
+ALTER TABLE doktor_asi_vurulur
+DROP COLUMN durum;
+
